@@ -1,269 +1,103 @@
-# LegalLLM
+# LegalLLM ⚖️
 
-RAG Application for College Law Department
+**RAG Application for College Law Department**
 
-This repository documents the architecture and implementation strategy for building a Retrieval-Augmented Generation (RAG) application for a college law department using Option A: OpenAI Assistants API + Vector Store (Chroma or Pinecone).
-The goal is rapid development while ensuring reliable, citation-grounded legal answers.
+[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
+[![OpenAI](https://img.shields.io/badge/OpenAI-Assistants%20API-green.svg)](https://openai.com/)
+[![Streamlit](https://img.shields.io/badge/Frontend-Streamlit-red.svg)](https://streamlit.io/)
+[![Vector Store](https://img.shields.io/badge/Vector%20Store-Pinecone%20%2F%20Chroma-orange.svg)](https://www.pinecone.io/)
 
-1. Problem Definition
+## 📖 Overview
 
-The application should assist law students and faculty by enabling:
+**LegalLLM** is a Retrieval-Augmented Generation (RAG) application designed to assist law students and faculty. It leverages **Option A: OpenAI Assistants API + Vector Store** to provide reliable, citation-grounded legal answers.
 
-Section-based lookup (IPC, CrPC, Constitution, Acts)
+The primary goal of this project is rapid development without compromising on accuracy. The system retrieves information strictly from a curated knowledge base of legal documents, ensuring no hallucinations and providing precise source citations.
 
-Definitions of legal terms and doctrines
+---
 
-Comparisons of legal concepts
+## 🏗 Architecture
 
-Retrieval of case laws and precedents
+### System Design
+The architecture focuses on using the OpenAI Assistants API for core reasoning and generation, paired with an external vector store for high-fidelity retrieval.
 
-Summaries of judgments and long documents
+**Model Architecture Diagrams:**
 
-Q&A over study materials, circulars, notes, and guidelines
+<img width="680" alt="Model Architecture" src="https://github.com/user-attachments/assets/a69a633d-fd71-4a0d-bb4a-115de581780c" />
 
-Access to structured and unstructured legal knowledge
+<br>
 
-The system must always answer based on the uploaded documents, with proper citations.
+<img width="100%" alt="Detailed Flow" src="https://github.com/user-attachments/assets/3df484f6-fc56-428e-a324-4042b5253938" />
 
-2. Knowledge Base Preparation
+### Technical Stack (Option A)
 
-To deliver the application quickly, prioritize fast ingestion of available law department documents.
+| Component | Technology Used |
+| :--- | :--- |
+| **LLM** | GPT-4.1, GPT-5.1, or GPT-4o |
+| **Embeddings** | `text-embedding-3-large` |
+| **Vector Store** | Chroma (Local) or Pinecone (Managed) |
+| **Orchestration** | OpenAI Assistants API (Retrieval Tool) |
+| **Frontend** | Streamlit |
+| **Deployment** | Railway / Render / Vercel |
 
-Supported Document Types
+---
 
-Bare Acts
+## ✨ Key Features
 
-Case briefs and judgments
+The application solves specific academic needs by enabling:
+* **Section-based Lookup:** Query specific IPC, CrPC, Constitution, and Acts.
+* **Concept Definitions:** Clear explanations of legal terms and doctrines.
+* **Case Retrieval:** Access to precedents and case laws.
+* **Summarization:** Summaries of complex judgments and long documents.
+* **Q&A:** Interactive queries over study materials, circulars, and notes.
+* **Strict Grounding:** Answers are always based on uploaded documents with citations.
 
-Lecture notes and PPTs
+---
 
-Research papers
+## 📂 Knowledge Base Preparation
 
-Department handbooks
+To ensure high-quality retrieval, the document ingestion pipeline follows these steps:
 
-Circulars and notifications
+### 1. Supported Document Types
+* Bare Acts
+* Case Briefs & Judgments
+* Lecture Notes & PPTs
+* Research Papers & Handbooks
+* Past Question Papers & Circulars
 
-Past question papers
+### 2. Ingestion Pipeline
+1.  **Extraction:** Text is extracted using `PyMuPDF` (or `Unstructured`). OCR via Tesseract is used only when necessary.
+2.  **Normalization:** Removal of headers, footers, and page numbers. Cleaning of OCR noise.
+3.  **Chunking:**
+    * **Strategy:** Section-aware splitting (keeping "Section 24" or "Article 14" intact).
+    * **Size:** 512–1024 tokens per chunk.
+4.  **Metadata Tagging:**
+    * `Act/Document Name`
+    * `Section/Article Number`
+    * `Page Number`
+    * `Category` (Act, Judgment, Notes)
 
-Preparation Steps
+---
 
-Extract text using PyMuPDF or the unstructured library.
+## ⚙️ Implementation Strategy
 
-Perform OCR only where necessary using Tesseract.
+### 1. Retrieval Strategy
+* **Embeddings:** Dense embeddings using OpenAI's `text-embedding-3-large`.
+* **Search:** Vector similarity search (Top K = 5–10).
+* **Filtering:** Metadata filters applied where possible (e.g., filtering by specific Act).
+* *Note: Hybrid retrieval (BM25) is omitted in this version to prioritize rapid development.*
 
-Normalize text:
+### 2. Assistant Workflow
+1.  **User Query:** The user asks a question via the UI.
+2.  **Retrieval:** The Assistant calls the vector store as a "Tool."
+3.  **Generation:** Relevant chunks are retrieved, and the Assistant generates an answer.
+4.  **Citation:** The final response includes source metadata (Act name, Section, Page).
 
-Remove page numbers, headers, footers
+### 3. System Prompt
+The following system message is used to strictly control the Assistant's behavior:
 
-Clean OCR noise
-
-Ensure section headings (e.g., “Section 24”, “Article 14”) remain intact
-
-Chunk documents using section-aware logic:
-
-Prefer splitting along legally meaningful boundaries
-
-Chunk size between 512–1024 tokens
-
-Store metadata:
-
-Act/Document name
-
-Section/Article number
-
-Page number
-
-Category (Act, Judgment, Notes, etc.)
-
-This ensures high-quality retrieval.
-
-3. Architecture Overview (Option A)
-
-Option A focuses on using the OpenAI Assistants API for the core reasoning and generation, with an external vector store for retrieval.
-
-Components
-
-LLM: GPT-4.1, GPT-5.1 or GPT-4o
-
-Embeddings: text-embedding-3-large
-
-Vector Store: Chroma (local) or Pinecone (managed)
-
-Document Ingestion Pipeline: Python script to extract text, chunk, embed, and index
-
-Assistant: Retrieval-enabled OpenAI Assistant using “retrieval” tool mode
-
-Frontend: Streamlit / FastAPI + simple UI
-
-Deployment: Railway / Render / Vercel
-
-High-Level Flow
-
-User enters query.
-
-Assistant uses retrieval tool to query vector store.
-
-Store returns relevant chunks.
-
-Assistant generates grounded answer with citations.
-
-This approach minimizes custom backend logic and maximizes speed of development.
-
-4. Retrieval Strategy
-
-Even though the Assistants API handles most orchestration, retrieval quality depends on indexing.
-
-Recommended Setup
-
-Use dense embeddings from OpenAI.
-
-Use a vector similarity search via Chroma or Pinecone.
-
-Configure top_k = 5–10 depending on document size.
-
-Use metadata filters when possible (e.g., filter by Act).
-
-Why Not Hybrid Retrieval Here
-
-To keep the system minimal for rapid development, the focus is only on dense retrieval.
-Hybrid retrieval (BM25 + reranker) is optional and not required for Option A.
-
-5. Building the RAG Pipeline (Option A)
-5.1 Document Ingestion Script
-
-The ingestion script performs:
-
-Text extraction
-
-Cleaning
-
-Chunking
-
-Embedding using text-embedding-3-large
-
-Indexing into Chroma/Pinecone
-
-This script is executed manually or as a batch job whenever new documents are added.
-
-5.2 Connecting Vector Store to Assistant
-
-OpenAI Assistants allow specifying tools that the model can call.
-The vector store becomes a retrieval tool, enabling:
-
-Querying chunks
-
-Returning source metadata
-
-Providing grounded context
-
-5.3 Generating Responses
-
-When the user asks a question:
-
-Assistant rewrites query (internally).
-
-Assistant calls the retrieval tool.
-
-Relevant chunks are returned.
-
-Assistant uses these chunks to generate answer.
-
-Final response includes citations and source metadata.
-
-5.4 Legal Prompt Template
-
-Used as the Assistant’s system message.
-
+```text
 You are an AI legal assistant created for the college law department.
 Use only the retrieved context provided through the retrieval tool.
 Always include act names, section numbers, and case citations.
 If the required information does not appear in the retrieved documents,
 respond with: "No relevant information found in the provided knowledge base."
-
-6. UI Layer
-
-For fast delivery, use Streamlit.
-
-Must-Have Features
-
-Search bar or chat interface
-
-Display answer with citations
-
-Button to view the source PDF section
-
-Side panel showing retrieved context
-
-History panel
-
-Backend complexity is minimal because the Assistants API handles the workflow.
-
-7. Evaluation Procedure
-Evaluation Metrics
-
-Context precision
-
-Context recall
-
-Faithfulness of answer
-
-Citation correctness
-
-Retrieval accuracy per query category
-
-Evaluation Data
-
-Past exam questions
-
-Vivas
-
-Law faculty sample queries
-
-Frequently asked student questions
-
-This ensures the system is reliable for academic use.
-
-8. Deployment
-Recommended Approach
-
-Backend: Python + Assistants API
-
-UI: Streamlit deployed on Railway or Vercel
-
-Vector Store:
-
-Pinecone (recommended for stability)
-
-Chroma if cost or offline constraints exist
-
-Steps
-
-Containerize with Docker (optional but recommended).
-
-Push to GitHub.
-
-Deploy using CI/CD or directly via cloud platform.
-
-Final Architecture Summary
-Final Recommended Stack for Option A
-
-OpenAI Assistants API with retrieval tool
-
-Embeddings: text-embedding-3-large
-
-Vector database: Pinecone or Chroma
-
-Document ingestion pipeline in Python
-
-Streamlit UI
-
-Railway or Vercel deployment
-
-This combination allows the entire system to be built, tested, and deployed in a very short time, while maintaining high accuracy and strong grounding in legal documents.
-
-Model Architecture
-
-<img width="680" height="596" alt="image" src="https://github.com/user-attachments/assets/a69a633d-fd71-4a0d-bb4a-115de581780c" />
-
-<img width="1400" height="630" alt="image" src="https://github.com/user-attachments/assets/3df484f6-fc56-428e-a324-4042b5253938" />
-
