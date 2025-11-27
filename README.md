@@ -28,7 +28,7 @@ The architecture focuses on using the OpenAI Assistants API for core reasoning a
 
 <img width="100%" alt="Detailed Flow" src="https://github.com/user-attachments/assets/3df484f6-fc56-428e-a324-4042b5253938" />
 
-### Technical Stack (Option A)
+### Technical Stack 
 
 | Component | Technology Used |
 | :--- | :--- |
